@@ -2,7 +2,7 @@
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-class proxy_request_handler(BaseHTTPRequestHandler):
+class ProxyRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         req = self
         content_length = req.headers.get('Content-Length', 0)
@@ -18,7 +18,7 @@ class proxy_request_handler(BaseHTTPRequestHandler):
     do_DELETE = do_GET
     do_OPTIONS = do_GET
 
-def run(handler_class=proxy_request_handler, server_class=HTTPServer, protocol="HTTP/1.1"):
+def run(handler_class=ProxyRequestHandler, server_class=HTTPServer, protocol="HTTP/1.1"):
     port = 8000
     server_address = ('',port)
     handler_class.protocol_version = protocol
