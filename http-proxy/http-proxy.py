@@ -17,7 +17,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         host = req.headers['Host']
         obj  = urlparse(path)
 
-        if(obj.scheme == 'http'):
+        if obj.scheme == 'http':
             try:
                 conn = HTTPConnection(host,obj.port)
                 req_body = self.rfile.read(content_length) if content_length else None
