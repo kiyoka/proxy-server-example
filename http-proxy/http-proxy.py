@@ -17,16 +17,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         host = req.headers['Host']
         obj  = urlparse(path)
 
-        print('  host: {}'.format(host))
-        print('  path: {}'.format(path))
-        print('  scheme: {}'.format(obj.scheme))
-        print('  port: {}'.format(obj.port))
-
         if(obj.scheme == 'http'):
             try:
                 conn = HTTPConnection(host,obj.port)
                 req_body = self.rfile.read(content_length) if content_length else None
-                conn.set_debuglevel(1)
+                #conn.set_debuglevel(1)
                 conn.request('GET', path, req_body, dict(req.headers))
                 res = conn.getresponse()
                 res_body = res.read()
