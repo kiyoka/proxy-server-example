@@ -45,22 +45,26 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 conn.request('GET', path, req_body, dict(req.headers))
                 res = conn.getresponse()
                 res_body = res.read()
-                return (True,res_body)
+                res_location = res.headers.get('Location')
+                res_code = res.code
+                return (True,res_code,res_location,res_body)
             except Exception as e:
                 print(e)
                 self.send_error(502)
-                return (False,'')
+                return (False,502,'','')
         else:
-            return (False,'')
+            return (False,502,'','')
 
     def do_GET(self):
         req = self
-        (flag,res_body) = self.get_remote_content()
+        (flag,res_code,res_location,res_body) = self.get_remote_content()
         if flag:
-            self.send_response(200)
+            self.send_response(res_code)
             content_length = int(len(res_body))
             print('  length of remote content: {}'.format(content_length))
             self.send_header('Content-Length', content_length)
+            if 301 == res_code:
+                self.send_header('Location', res_location)
             self.end_headers()
             self.wfile.write(res_body)
             self.wfile.flush()
