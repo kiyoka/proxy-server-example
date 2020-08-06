@@ -1,13 +1,33 @@
 # -*- coding: utf-8 -*-
 #
-# a simple http only proxy server.
+# a simple http/https proxy server.
 #
 
+import socket
+import select
+import sys
+import ssl
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from http.client import HTTPConnection
 from urllib.parse import urlparse
+from socketserver import ThreadingMixIn
+
+
+class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    address_family = socket.AF_INET6
+
+    def handle_error(self, request, client_address):
+        cls, e = sys.exc_info()[:2]
+        if cls is socket.error or cls is ssl.SSLError:
+            pass
+        else:
+            return HTTPServer.handle_error(self, request, client_address)
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
+    timeout = 30
+    send_delay = 1/10.0
+    blocksize = 1024 * 10
 
     def get_remote_content(self):
         req = self
@@ -39,7 +59,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if flag:
             self.send_response(200)
             content_length = int(len(res_body))
-            print('  length of remote contens: {}'.format(content_length))
+            print('  length of remote content: {}'.format(content_length))
             self.send_header('Content-Length', content_length)
             self.end_headers()
             self.wfile.write(res_body)
@@ -47,13 +67,40 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(501,'Unsupported')
 
+    def do_CONNECT(self):
+        address = self.path.split(':',1)
+        print(address)
+        print('  CONNECT to remote (host,port,timeout): ({},{},{})'.format(address[0],address[1],self.timeout))
+        try:
+            s = socket.create_connection(address, timeout = self.timeout)
+        except Exception as e:
+            self.send_error(502)
+            return
+        self.send_response(200, 'Connection Established')
+        self.end_headers()
+
+        conns = [self.connection, s]
+        self.close_connection = 0
+        while not self.close_connection:
+            rlist,wlist,xlist = select.select(conns, [], conns, self.timeout)
+            if xlist or not rlist:
+                break
+            for r in rlist:
+                other = conns[1] if r is conns[0] else conns[0]
+                data = r.recv(self.blocksize)
+                if not data:
+                    self.close_connection = 1
+                    break
+                other.sendall(data)
+                time.sleep(self.send_delay)
+
     do_HEAD = do_GET
     do_POST = do_GET
     do_PUT = do_GET
     do_DELETE = do_GET
     do_OPTIONS = do_GET
 
-def run(handler_class=ProxyRequestHandler, server_class=HTTPServer, protocol="HTTP/1.1"):
+def run(handler_class=ProxyRequestHandler, server_class=ThreadingHTTPServer, protocol="HTTP/1.1"):
     port = 8080
     server_address = ('',port)
     handler_class.protocol_version = protocol
