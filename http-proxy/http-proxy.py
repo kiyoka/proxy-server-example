@@ -12,7 +12,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def get_remote_content(self):
         req = self
         content_length = req.headers.get('Content-Length', 0)
-
+                    
         path = req.path
         host = req.headers['Host']
         obj  = urlparse(path)
@@ -39,7 +39,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if flag:
             self.send_response(200)
             content_length = int(len(res_body))
-            print('  length of remote contens: {}'.format(content_length))
+            print('  length of remote content: {}'.format(content_length))
             self.send_header('Content-Length', content_length)
             self.end_headers()
             self.wfile.write(res_body)
