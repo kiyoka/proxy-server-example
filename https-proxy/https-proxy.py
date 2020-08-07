@@ -27,7 +27,7 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     timeout = 30
     send_delay = 1/10.0
-    blocksize = 1024 * 10
+    blocksize = 1024 * 100
 
     def get_remote_content(self):
         req = self
